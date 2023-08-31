@@ -1,0 +1,44 @@
+import pandas as pd
+import numpy as np
+
+# Load historical market data (replace this with actual market data)
+data = pd.read_csv('market_data.csv')  # Load actual market data from a CSV file
+
+# Calculate the simple moving averages (SMA) for a short and long period
+short_period = 50
+long_period = 200
+
+data['SMA_Short'] = data['Close'].rolling(window=short_period).mean()
+data['SMA_Long'] = data['Close'].rolling(window=long_period).mean()
+
+# Create trading signals based on SMA crossover strategy
+data['Signal'] = 0  # Initialize signal column
+
+data.loc[data['SMA_Short'] > data['SMA_Long'], 'Signal'] = 1  # Buy signal
+data.loc[data['SMA_Short'] < data['SMA_Long'], 'Signal'] = -1  # Sell signal
+
+# Calculate daily returns based on trading signals
+data['Position'] = data['Signal'].shift(1)  # Shift signal to represent yesterday's signal
+data['Daily_Return'] = data['Close'].pct_change() * data['Position']
+
+# Include transaction costs and slippage
+transaction_cost_pct = 0.001  # 0.1% transaction cost
+data['Transaction_Cost'] = data['Position'].diff().abs() * transaction_cost_pct
+data['Daily_Return'] -= data['Transaction_Cost']
+
+# Calculate cumulative returns
+data['Cumulative_Return'] = (1 + data['Daily_Return']).cumprod()
+
+# Print the data (you can also save it to a file for analysis)
+print(data)
+
+# Plot the cumulative returns
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(12, 6))
+plt.plot(data['Date'], data['Cumulative_Return'])
+plt.xlabel('Date')
+plt.ylabel('Cumulative Return')
+plt.title('Cumulative Returns with Risk Management and Transaction Costs')
+plt.grid(True)
+plt.show()
